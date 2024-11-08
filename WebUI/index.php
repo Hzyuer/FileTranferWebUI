@@ -124,7 +124,8 @@ function handleUserRequest($socket) {
         loginUser($socket, $username, $password);
     } elseif (isset($_POST['action']) && $_POST['action'] === 'upload' && isset($_FILES['file'])){
         $filePath = $_FILES['file']['tmp_name'];
-        uploadFile($socket, $filePath);
+        $fileName = $_FILES['file']['name'];
+        uploadFile($socket, $filePath,$fileName);
     }
     else {
         echo "无效的请求";
@@ -200,40 +201,105 @@ function loginUser($socket, $username, $password) {
     }
 }
 
-function uploadFile($socket, $filePath) {
-    if (!file_exists($filePath)) {
-        echo "文件不存在。";
-        return;
+function uploadFile($socket,$filePath,$fileName) {
+    try {
+        // 检查文件是否存在
+        if (!file_exists($filePath)) {
+            echo "文件 {$filePath} 不存在\n";
+            return;
+        }
+
+        // 准备头信息
+        $header = [
+            'command' => 'UPLOAD',
+            'fileName' => basename($fileName),
+            'fileSize' => filesize($filePath),
+            'time' => date('Y-m-d H:i:s')
+        ];
+
+        // 将头信息转换为 JSON 并填充为固定长度（128 字节）
+        $headerJson = json_encode($header);
+        if ($headerJson === false) {
+            throw new Exception("无法将头信息数组转换为 JSON");
+        }
+        $headerPacked = str_pad($headerJson, 128, "\0");
+
+        // 发送头信息
+        fwrite($socket, $headerPacked);
+
+        // 打开文件以二进制方式读取
+        $file = fopen($filePath, 'rb');
+        if ($file === false) {
+            echo "无法打开文件: $filePath\n";
+            return;
+        }
+
+        // 逐块读取文件并发送
+        while (!feof($file)) {
+            // 每次读取 1024 字节
+            $data = fread($file, 1024);
+            if ($data === false) {
+                throw new Exception("读取文件时发生错误");
+            }
+
+            if (strlen($data) === 0) {
+                echo basename($filePath) . " 文件发送完毕...\n";
+                break;
+            }
+
+            echo "发送的内容: " . bin2hex($data) . "\n";  // 用 bin2hex 打印二进制数据以便调试
+
+            // 对文件数据进行加密
+            //$tosend = encrypt_file($data);  // 假设 encrypt_file() 是一个已实现的加密函数
+            $tosend = $data;
+            echo "加密后的消息: " . bin2hex($tosend) . "\n";  // 打印加密后的消息
+
+            // 发送加密消息的长度（4 字节大端格式）
+            $tosendLength = strlen($tosend);
+            $lengthPacked = (string)$tosendLength;// base64encode
+            fwrite($socket, $lengthPacked);
+
+            // 发送加密后的数据
+            fwrite($socket, $tosend);
+        }
+
+        fclose($file);
+
+        // 提示信息
+        echo "上传成功\n";
+
+    } catch (Exception $e) {
+        echo "上传文件时发生错误: " . $e->getMessage() . "\n";
     }
+}
 
-    $header = [
-        'command' => 'UPLOAD',
-        'fileName' => basename($filePath),
-        'fileSize' => filesize($filePath),
-        'time' => date('Y-m-d H:i:s'),
-    ];
+// 加密函数
+function encrypt_file($data) {
+    global $server_public_key;
+    // 生成 AES 密钥和初始向量
+    $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
+    $aesIv = generate_aes_iv();    // 生成 128 位初始向量
 
-    $headerJson = json_encode($header);
-    $headerPacked = str_pad($headerJson, 128, "\0");
+    // 使用 AES-256-CBC 加密数据
+    $cipher = "aes-256-cbc";
+    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
 
-    echo "\n".$headerPacked;
+    // 加密 AES 密钥和初始向量 (使用 RSA 公钥)
+    $publicKey =  $server_public_key;
+    openssl_public_encrypt(json_encode(['key' => $aesKey, 'iv' => $aesIv]), $encryptedKeyIv, $publicKey);
 
-    fwrite($socket, $headerPacked);
+    // 将加密后的数据与密钥和 IV 打包在一起
+    $sendMessage = serialize([$encryptedData, $encryptedKeyIv]);
 
-    $file = fopen($filePath, 'rb');
-    while (!feof($file)) {
-        $data = fread($file, 1024);
-        $tosendLength = strlen($data);  // 获取 $tosend 的长度（字节数）
-        // 将长度转换为字符串，通常发送时会固定长度，比如 4 个字节用于表示长度
-        $lengthPacked = pack('N', $tosendLength);  // 这里使用大端格式 4 字节无符号整数
+    return $sendMessage;
+}
 
-        echo $data." which length is : ".$lengthPacked."\n";
+function generate_aes_key() {
+    return openssl_random_pseudo_bytes(32); // 生成 256 位 AES 密钥
+}
 
-        fwrite($socket, $lengthPacked);
-        fwrite($socket, $data);
-    }
-    fclose($file);
-    echo "文件上传成功。\n";
+function generate_aes_iv() {
+    return openssl_random_pseudo_bytes(16); // 生成 128 位初始向量
 }
 
 
