@@ -298,7 +298,9 @@ class Server:
                             print(f'{os.path.basename(file_path)}文件发送完毕...')
                             break
                         print("发送的内容:", data)
-                        tosend = self.encrypt_file(data)
+                        # tosend = self.encrypt_file(data)
+                        tosend = data
+
                         print("加密后的消息", tosend)
                         conn.send(str(len(tosend)).encode('utf-8'))
                         conn.send(tosend)

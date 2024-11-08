@@ -114,6 +114,9 @@ if ($server_key_hash === hash('sha256', base64_decode($server_public_key))) {
 // 处理用户请求的函数
 function handleUserRequest($socket) {
     $action = $_POST['action'];
+
+    echo $action."\n";
+
     if ($action === 'register') {
         $username = $_POST['username'];
         $password = $_POST['password'];
@@ -126,6 +129,14 @@ function handleUserRequest($socket) {
         $filePath = $_FILES['file']['tmp_name'];
         $fileName = $_FILES['file']['name'];
         uploadFile($socket, $filePath,$fileName);
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'download' && isset($_POST['fileName'])) {
+
+
+        $fileName = $_POST['fileName'];
+
+        echo "\n".$fileName."\n";
+
+        download_file($socket, $fileName);
     }
     else {
         echo "无效的请求";
@@ -273,26 +284,131 @@ function uploadFile($socket,$filePath,$fileName) {
     }
 }
 
-// 加密函数
-function encrypt_file($data) {
-    global $server_public_key;
-    // 生成 AES 密钥和初始向量
-    $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
-    $aesIv = generate_aes_iv();    // 生成 128 位初始向量
+function download_file($socket, $fileName) {
 
-    // 使用 AES-256-CBC 加密数据
-    $cipher = "aes-256-cbc";
-    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
+    echo "\n".$fileName."\n";
 
-    // 加密 AES 密钥和初始向量 (使用 RSA 公钥)
-    $publicKey =  $server_public_key;
-    openssl_public_encrypt(json_encode(['key' => $aesKey, 'iv' => $aesIv]), $encryptedKeyIv, $publicKey);
+    try {
+        // 准备下载请求头信息
+        $header = [
+            'command' => 'DOWNLOAD',
+            'fileName' => $fileName,
+            'fileSize' => '',
+            'time' => date('Y-m-d H:i:s')
+        ];
 
-    // 将加密后的数据与密钥和 IV 打包在一起
-    $sendMessage = serialize([$encryptedData, $encryptedKeyIv]);
+        // 将头信息转换为 JSON 并填充为固定长度（128 字节）
+        $headerJson = json_encode($header);
+        if ($headerJson === false) {
+            throw new Exception("无法将头信息数组转换为 JSON");
+        }
+        $headerPacked = str_pad($headerJson, 128, "\0");
 
-    return $sendMessage;
+        echo "\n".$headerPacked."\n";
+
+        // 发送下载请求头信息
+        fwrite($socket, $headerPacked);
+
+        // 接收服务器的响应（文件信息）
+        $fileinfoSize = 128; // 假设文件信息中包含文件名和文件大小信息
+        $buf = fread($socket, $fileinfoSize);
+        if ($buf === false || strlen($buf) !== $fileinfoSize) {
+            throw new Exception("接收文件信息时发生错误");
+        }
+
+        // 解包文件信息
+        $headerJson = trim(substr($buf, 0, 128), "\0");
+        $header = json_decode($headerJson, true);
+
+
+//        echo $header."\n";
+
+        if ($header === null) {
+            throw new Exception("无法解析文件头信息");
+        }
+
+        // 检查下载状态
+        if ($header['status'] !== 'OK') {
+            throw new Exception("下载失败: " . $header['message']);
+        }
+
+        $fileSize = $header['fileSize'];
+        $downloadDir = 'download_files';
+        if (!file_exists($downloadDir)) {
+            mkdir($downloadDir, 0777, true);
+        }
+        $filePath = $downloadDir . '/' . $fileName;
+
+        // 准备接收文件数据
+        $file = fopen($filePath, 'wb');
+        if ($file === false) {
+            throw new Exception("无法创建文件: $filePath");
+        }
+
+        echo "开始接收文件: $fileName, 文件大小: $fileSize 字节\n";
+        $receivedSize = 0;
+
+        while ($receivedSize < $fileSize) {
+            // 先接收加密数据的长度（4 字节大端格式）
+            $lengthBuf = fread($socket, 1024);
+
+            echo "\n".$lengthBuf."\n";
+
+            $recvLen = (Int)$lengthBuf; //unpack('N', $lengthBuf)[1];
+
+            // 接收加密数据
+            $encryptedData = fread($socket, $recvLen);
+
+
+            if ($encryptedData === false || strlen($encryptedData) !== $recvLen) {
+                throw new Exception("接收加密数据时发生错误");
+            }
+
+            // 解密数据
+//            $decryptedData = decrypt_file($encryptedData);
+            $decryptedData = $encryptedData;
+
+            echo $decryptedData."\n";
+
+            if ($decryptedData === null) {
+                throw new Exception("解密数据时发生错误");
+            }
+
+            // 写入文件
+            fwrite($file, $decryptedData);
+            $receivedSize += strlen($decryptedData);
+
+            echo $receivedSize."\n";
+        }
+
+        fclose($file);
+        echo "文件下载成功: $fileName\n";
+
+    } catch (Exception $e) {
+        echo "下载文件时发生错误: " . $e->getMessage() . "\n";
+    }
 }
+
+// 加密函数
+//function encrypt_file($data) {
+//    global $server_public_key;
+//    // 生成 AES 密钥和初始向量
+//    $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
+//    $aesIv = generate_aes_iv();    // 生成 128 位初始向量
+//
+//    // 使用 AES-256-CBC 加密数据
+//    $cipher = "aes-256-cbc";
+//    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
+//
+//    // 加密 AES 密钥和初始向量 (使用 RSA 公钥)
+//    $publicKey =  $server_public_key;
+//    openssl_public_encrypt(json_encode(['key' => $aesKey, 'iv' => $aesIv]), $encryptedKeyIv, $publicKey);
+//
+//    // 将加密后的数据与密钥和 IV 打包在一起
+//    $sendMessage = serialize([$encryptedData, $encryptedKeyIv]);
+//
+//    return $sendMessage;
+//}
 
 function generate_aes_key() {
     return openssl_random_pseudo_bytes(32); // 生成 256 位 AES 密钥
@@ -306,6 +422,8 @@ function generate_aes_iv() {
 
 // 调用处理用户请求的函数
 handleUserRequest($socket);
+
+//download_file($socket,"hyper-v.txt");
 
 // 关闭套接字连接
 fclose($socket);
