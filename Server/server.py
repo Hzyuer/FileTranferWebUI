@@ -243,10 +243,10 @@ class Server:
             if file_size - recvd_size > 1024:
                 # 由于经过加密，实际发送的文件长度和原本不一致
 
-                recv_len = int(conn.recv(1024))
+                recv_len = int(base64.b64decode(conn.recv(1024)))
                 # recv_len = int(conn.recv(1024).decode("utf-8"))
                 print("该段发送长度: ", recv_len)
-                rdata = conn.recv(recv_len)
+                rdata = base64.b64decode(conn.recv(recv_len))
 
                 decrypted_data = self.decrypt_file(rdata)
                 # decrypted_data = rdata
@@ -255,9 +255,10 @@ class Server:
                 recvd_size += len(decrypted_data)
             else:
                 
-                recv_len = int(conn.recv(1024))
+                recv_len = int(base64.b64decode(conn.recv(1024)))
                 print("该段发送长度: ", recv_len)
-                rdata = conn.recv(recv_len)
+                rdata = base64.b64decode(conn.recv(recv_len))
+                
                 print(rdata)
                 
                 decrypted_data = self.decrypt_file(rdata)
@@ -470,7 +471,7 @@ class Server:
         Returns:
             解密后的数据(完整性通过),否则返回None
         '''
-        data_dict = json.loads(data.decode('utf-8'))
+        data_dict = json.loads(data)
         cipher_message = data_dict["encrypted_data"]
         cipher_keyiv = data_dict["encrypted_key_iv"]
         # cipher_message, cipher_keyiv = pickle.loads(data)
@@ -485,11 +486,20 @@ class Server:
 
 
         keyiv = json.loads(decrypted_keyiv)
-        key, iv = keyiv["Key"], keyiv["IV"]
+        key, iv = keyiv["key"], keyiv["iv"]
+
+        iv = base64.b64decode(iv)
+        key = base64.b64decode(key)
+
         print(f"解密后的密钥{key}和初始向量{iv}:")
 
         aes = AESCryptor(key, iv)
+        
+        print("message长度为：",len(cipher_message))
+        
         decrypted_message = aes.decrypt_message(cipher_message)
+
+
         plain_message = pickle.loads(decrypted_message)
         content = base64.b64decode(plain_message['Message'])
         print("解密的内容是", content)

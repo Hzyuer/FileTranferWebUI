@@ -264,13 +264,16 @@ function uploadFile($socket,$filePath,$fileName) {
 
             // 对文件数据进行加密
             $tosend = encrypt_file($data);  // 假设 encrypt_file() 是一个已实现的加密函数
-            //$tosend = $data;
             echo "加密后的消息: " . $tosend . "\n";  // 打印加密后的消息
+            $tosend = base64_encode($tosend);
+
+            //$tosend = $data;
+//            echo "加密后的消息: " . $tosend . "\n";  // 打印加密后的消息
 
             // 发送加密消息的长度（4 字节大端格式）
             $tosendLength = strlen($tosend);
             $lengthPacked = (string)$tosendLength;// base64encode
-            fwrite($socket, $lengthPacked);
+            fwrite($socket, base64_encode($lengthPacked));
 
             // 发送加密后的数据
             fwrite($socket, $tosend);

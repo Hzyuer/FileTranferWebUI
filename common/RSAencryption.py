@@ -71,9 +71,15 @@ class RSACryptor:
         encrypted_message: 加密后的消息
         private_key: 私钥
         '''
+        sentinel = None
+
         self.rsa_key = RSA.import_key(private_key)
         cipher_rsa = PKCS1_v1_5.new(self.rsa_key)
-        decrypted_message = cipher_rsa.decrypt(base64.b64decode(encrypted_message))
+        decrypted_message = cipher_rsa.decrypt(base64.b64decode(encrypted_message),sentinel)
+        
+        if decrypted_message == sentinel:
+             raise ValueError("解密失败，可能是密钥不正确或数据损坏")
+
         return decrypted_message
     
     def sign_message(self, message: bytes | str, private_key) -> bytes:
