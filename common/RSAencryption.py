@@ -2,7 +2,7 @@ import base64
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
 from Crypto.Signature import pkcs1_15
-from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Cipher import PKCS1_v1_5
 
 
 class RSACryptor:
@@ -61,7 +61,7 @@ class RSACryptor:
         if isinstance(message, str):
             message = message.encode('utf-8')
         
-        cipher_rsa = PKCS1_OAEP.new(self.rsa_key)
+        cipher_rsa = PKCS1_v1_5.new(self.rsa_key)
         encrypted_message = base64.b64encode(cipher_rsa.encrypt(message))
         return encrypted_message
     
@@ -72,7 +72,7 @@ class RSACryptor:
         private_key: 私钥
         '''
         self.rsa_key = RSA.import_key(private_key)
-        cipher_rsa = PKCS1_OAEP.new(self.rsa_key)
+        cipher_rsa = PKCS1_v1_5.new(self.rsa_key)
         decrypted_message = cipher_rsa.decrypt(base64.b64decode(encrypted_message))
         return decrypted_message
     

@@ -260,10 +260,12 @@ function uploadFile($socket,$filePath,$fileName) {
 
             echo "发送的内容: " . bin2hex($data) . "\n";  // 用 bin2hex 打印二进制数据以便调试
 
+            echo "原始数据的长度为： ".strlen($data);
+
             // 对文件数据进行加密
-            //$tosend = encrypt_file($data);  // 假设 encrypt_file() 是一个已实现的加密函数
-            $tosend = $data;
-            echo "加密后的消息: " . bin2hex($tosend) . "\n";  // 打印加密后的消息
+            $tosend = encrypt_file($data);  // 假设 encrypt_file() 是一个已实现的加密函数
+            //$tosend = $data;
+            echo "加密后的消息: " . $tosend . "\n";  // 打印加密后的消息
 
             // 发送加密消息的长度（4 字节大端格式）
             $tosendLength = strlen($tosend);
@@ -388,30 +390,50 @@ function download_file($socket, $fileName) {
         echo "下载文件时发生错误: " . $e->getMessage() . "\n";
     }
 }
+//加密函数
+function encrypt_file($data) {
+    global $server_public_key;
+    // 生成 AES 密钥和初始向量
+    $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
+    $aesIv = generate_aes_iv();    // 生成 128 位初始向量
 
-// 加密函数
-//function encrypt_file($data) {
-//    global $server_public_key;
-//    // 生成 AES 密钥和初始向量
-//    $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
-//    $aesIv = generate_aes_iv();    // 生成 128 位初始向量
-//
-//    // 使用 AES-256-CBC 加密数据
-//    $cipher = "aes-256-cbc";
-//    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
-//
-//    // 加密 AES 密钥和初始向量 (使用 RSA 公钥)
-//    $publicKey =  $server_public_key;
-//    openssl_public_encrypt(json_encode(['key' => $aesKey, 'iv' => $aesIv]), $encryptedKeyIv, $publicKey);
-//
-//    // 将加密后的数据与密钥和 IV 打包在一起
-//    $sendMessage = serialize([$encryptedData, $encryptedKeyIv]);
-//
-//    return $sendMessage;
-//}
+    echo "AES秘钥： ".base64_encode($aesKey)."\n";
+    echo "AES向量： ".base64_encode($aesIv)."\n";
+
+    // 使用 AES-256-CBC 加密数据
+    $cipher = "aes-256-cbc";
+    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
+
+    // 使用服务器公钥对 AES 密钥和 IV 进行加密
+    $keyIv = json_encode(['key' => base64_encode($aesKey), 'iv' => base64_encode($aesIv)]);
+    $encryptedKeyIv = null;
+    $publicKeyResource = openssl_get_publickey(base64_decode($server_public_key));
+
+
+    if ($publicKeyResource === false) {
+        throw new Exception("加载公钥失败");
+    }
+
+    $encryptionResult = openssl_public_encrypt($keyIv, $encryptedKeyIv, $publicKeyResource);
+
+    if (!$encryptionResult) {
+        throw new Exception("RSA 加密失败");
+    }
+
+    // 返回加密后的数据和加密的 AES 密钥与 IV
+    $res = [
+        'encrypted_data' => base64_encode($encryptedData),  // 将加密数据转换为 base64 便于传输
+        'encrypted_key_iv' => base64_encode($encryptedKeyIv) // 将加密后的 AES 密钥和 IV 转换为 base64
+    ];
+
+    // 将加密后的数据与密钥和 IV 打包在一起
+    $sendMessage = json_encode($res);
+
+    return $sendMessage;
+}
 
 function generate_aes_key() {
-    return openssl_random_pseudo_bytes(32); // 生成 256 位 AES 密钥
+    return openssl_random_pseudo_bytes(16); // 生成 128 位 AES 密钥
 }
 
 function generate_aes_iv() {

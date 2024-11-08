@@ -248,8 +248,9 @@ class Server:
                 print("该段发送长度: ", recv_len)
                 rdata = conn.recv(recv_len)
 
-                # decrypted_data = self.decrypt_file(rdata)
-                decrypted_data = rdata
+                decrypted_data = self.decrypt_file(rdata)
+                # decrypted_data = rdata
+                print("解密后: "+decrypted_data)
 
                 recvd_size += len(decrypted_data)
             else:
@@ -259,8 +260,9 @@ class Server:
                 rdata = conn.recv(recv_len)
                 print(rdata)
                 
-                # decrypted_data = self.decrypt_file(rdata)
-                decrypted_data = rdata
+                decrypted_data = self.decrypt_file(rdata)
+                # decrypted_data = rdata
+                print("解密后: "+decrypted_data)
 
                 recvd_size = file_size
             fp.write(decrypted_data)
@@ -468,11 +470,21 @@ class Server:
         Returns:
             解密后的数据(完整性通过),否则返回None
         '''
-        cipher_message, cipher_keyiv = pickle.loads(data)
+        data_dict = json.loads(data.decode('utf-8'))
+        cipher_message = data_dict["encrypted_data"]
+        cipher_keyiv = data_dict["encrypted_key_iv"]
+        # cipher_message, cipher_keyiv = pickle.loads(data)
         print(f"密文:{cipher_message}, 类型{type(cipher_message)}\n密钥:{cipher_keyiv}, 类型{type(cipher_keyiv)}")
+
+
         decrypted_keyiv = self.rsa_cipher.decrypt_message(cipher_keyiv, self.server_private_key)
-        # print("接收到的密钥和初始向量:", decrypted_keyiv)
-        keyiv = pickle.loads(decrypted_keyiv)
+
+
+
+        print("接收到的密钥和初始向量:", decrypted_keyiv)
+
+
+        keyiv = json.loads(decrypted_keyiv)
         key, iv = keyiv["Key"], keyiv["IV"]
         print(f"解密后的密钥{key}和初始向量{iv}:")
 
