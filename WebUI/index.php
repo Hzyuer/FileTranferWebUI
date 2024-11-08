@@ -122,6 +122,9 @@ function handleUserRequest($socket) {
         $username = $_POST['username'];
         $password = $_POST['password'];
         loginUser($socket, $username, $password);
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'upload' && isset($_FILES['file'])){
+        $filePath = $_FILES['file']['tmp_name'];
+        uploadFile($socket, $filePath);
     }
     else {
         echo "无效的请求";
@@ -185,7 +188,6 @@ function loginUser($socket, $username, $password) {
             $_SESSION['client_private_key'] = $client_private_key;
             $_SESSION['server_public_key'] = $server_public_key;
             header('Location: file_upload_download.html');
-            fclose($socket);
         } else {
             echo "登录失败";
         }
@@ -198,11 +200,46 @@ function loginUser($socket, $username, $password) {
     }
 }
 
+function uploadFile($socket, $filePath) {
+    if (!file_exists($filePath)) {
+        echo "文件不存在。";
+        return;
+    }
+
+    $header = [
+        'command' => 'UPLOAD',
+        'fileName' => basename($filePath),
+        'fileSize' => filesize($filePath),
+        'time' => date('Y-m-d H:i:s'),
+    ];
+
+    $headerJson = json_encode($header);
+    $headerPacked = str_pad($headerJson, 128, "\0");
+
+    echo "\n".$headerPacked;
+
+    fwrite($socket, $headerPacked);
+
+    $file = fopen($filePath, 'rb');
+    while (!feof($file)) {
+        $data = fread($file, 1024);
+        $tosendLength = strlen($data);  // 获取 $tosend 的长度（字节数）
+        // 将长度转换为字符串，通常发送时会固定长度，比如 4 个字节用于表示长度
+        $lengthPacked = pack('N', $tosendLength);  // 这里使用大端格式 4 字节无符号整数
+
+        echo $data." which length is : ".$lengthPacked."\n";
+
+        fwrite($socket, $lengthPacked);
+        fwrite($socket, $data);
+    }
+    fclose($file);
+    echo "文件上传成功。\n";
+}
+
+
 
 // 调用处理用户请求的函数
 handleUserRequest($socket);
-
-
 
 // 关闭套接字连接
 fclose($socket);
