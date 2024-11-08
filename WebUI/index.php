@@ -395,6 +395,12 @@ function download_file($socket, $fileName) {
 }
 //加密函数
 function encrypt_file($data) {
+
+    $blockSize = 16; // AES 块大小为 16 字节
+    $paddingLength = $blockSize - (strlen($data) % $blockSize);
+    $padding = str_repeat(chr($paddingLength), $paddingLength);
+    $paddedData = $data . $padding;
+
     global $server_public_key;
     // 生成 AES 密钥和初始向量
     $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
@@ -405,7 +411,7 @@ function encrypt_file($data) {
 
     // 使用 AES-256-CBC 加密数据
     $cipher = "aes-256-cbc";
-    $encryptedData = openssl_encrypt($data, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
+    $encryptedData = openssl_encrypt($paddedData, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
 
     // 使用服务器公钥对 AES 密钥和 IV 进行加密
     $keyIv = json_encode(['key' => base64_encode($aesKey), 'iv' => base64_encode($aesIv)]);

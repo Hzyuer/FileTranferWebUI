@@ -79,7 +79,8 @@ class AESCryptor:
         if isinstance(ciphertext, str):
             self.data = base64.decodebytes(ciphertext.encode(encoding='utf-8'))
         else:
-            self.data = base64.decodebytes(ciphertext)
+            print("HAHAHA")
+            self.data = ciphertext
             
         return self.__decrypt()
     
@@ -99,9 +100,15 @@ class AESCryptor:
         '''
         aes = AES.new(self.key, AES.MODE_CBC, self.iv)
         de_data = aes.decrypt(self.data)
+
+        print("Origin: ",len(de_data))
+
         de_data = self.__pkcs7_unpadding(de_data)
+        
+        print("unpadding: ", len(de_data))
+
         decrypted_text = base64.b64decode(de_data)
-        return decrypted_text
+        return de_data
 
 def genKey() -> bytes:
     '''

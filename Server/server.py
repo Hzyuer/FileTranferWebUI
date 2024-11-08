@@ -15,6 +15,11 @@ from common.RSAencryption import RSACryptor
 from common.AESencryption import AESCryptor
 import hashlib
 
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+
 def sha256_hash(data):
     '''
     Usage: 进行sha256哈希
@@ -485,33 +490,56 @@ class Server:
         print("接收到的密钥和初始向量:", decrypted_keyiv)
 
 
-        keyiv = json.loads(decrypted_keyiv)
+        keyiv = json.loads(decrypted_keyiv.decode('utf-8'))
         key, iv = keyiv["key"], keyiv["iv"]
+
+        print(key)
+        print(iv)
 
         iv = base64.b64decode(iv)
         key = base64.b64decode(key)
 
         print(f"解密后的密钥{key}和初始向量{iv}:")
 
+    
+
+        # try:
+        #     # Base64 解码加密的数据
+        #     encrypted_data_bytes = base64.b64decode(cipher_message)
+
+        #     # 创建 AES 解密器
+        #     cipher = AES.new(key, AES.MODE_CBC, iv)
+
+        #     # 解密并去除 PKCS7 填充
+        #     decrypted_data = unpad(cipher.decrypt(encrypted_data_bytes), AES.block_size)
+        #     content = decrypted_data.decode('utf-8')
+        # except Exception as e:
+        #     raise Exception(f"AES 解密失败: {e}")
+
+
         aes = AESCryptor(key, iv)
         
         print("message长度为：",len(cipher_message))
         
-        decrypted_message = aes.decrypt_message(cipher_message)
+        decrypted_message = aes.decrypt_message(base64.b64decode(cipher_message))
 
 
         plain_message = pickle.loads(decrypted_message)
+
+        print("plain_message: ",plain_message)
+
+
         content = base64.b64decode(plain_message['Message'])
         print("解密的内容是", content)
-        digest = plain_message['Digest']
-        print("解密的消息摘要", digest, type(digest))
+        # digest = plain_message['Digest']
+        # print("解密的消息摘要", digest, type(digest))
 
-        if self.rsa_cipher.verify_signature(content, digest, self.client_public_key):
-            print("完整性验证通过!")
-            return content
-        else:
-            print("文件签名不一致!")
-            return None
+        # if self.rsa_cipher.verify_signature(content, digest, self.client_public_key):
+        #     print("完整性验证通过!")
+        #     return content
+        # else:
+        #     print("文件签名不一致!")
+        #     return None
 
 
 if __name__ == "__main__":
