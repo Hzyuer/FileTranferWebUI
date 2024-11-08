@@ -34,13 +34,23 @@ function uploadFile($socket, $filePath) {
         'time' => date('Y-m-d H:i:s'),
     ];
 
-    $headerBytes = json_encode($header);
-    $paddedHeader = str_pad($headerBytes, 128, "\0");
-    fwrite($socket, $paddedHeader);
+    $headerJson = json_encode($header);
+    $headerPacked = str_pad($headerJson, 128, "\0");
+
+    echo "\n".$headerPacked;
+
+    fwrite($socket, $headerPacked);
 
     $file = fopen($filePath, 'rb');
     while (!feof($file)) {
         $data = fread($file, 1024);
+        $tosendLength = strlen($data);  // 获取 $tosend 的长度（字节数）
+    // 将长度转换为字符串，通常发送时会固定长度，比如 4 个字节用于表示长度
+        $lengthPacked = pack('N', $tosendLength);  // 这里使用大端格式 4 字节无符号整数
+
+        echo $data." which length is : ".$lengthPacked."\n";
+
+        fwrite($socket, $lengthPacked);
         fwrite($socket, $data);
     }
     fclose($file);

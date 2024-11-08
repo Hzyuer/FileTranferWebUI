@@ -44,7 +44,7 @@ if ($exported === false) {
     $error = openssl_error_string();
     die("私钥导出失败: $error\n");
 }
-echo "私钥:\n" . $client_private_key . "\n\n";
+//echo "私钥:\n" . $client_private_key . "\n\n";
 
 // 提取公钥
 $public_key_details = openssl_pkey_get_details($res);
@@ -54,7 +54,7 @@ if ($public_key_details === false) {
 }
 
 $client_public_key = $public_key_details["key"];
-echo "公钥:\n" . $client_public_key . "\n";
+//echo "公钥:\n" . $client_public_key . "\n";
 
 
 // Step 0: 读取本地公钥并发送给服务器
@@ -103,6 +103,8 @@ $json_data=json_decode( $json_str , true);
 $server_public_key = $json_data['public_key'];
 $server_key_hash = $json_data['key_hash'];
 
+echo base64_decode($server_public_key);
+
 if ($server_key_hash === hash('sha256', base64_decode($server_public_key))) {
     echo "成功接收服务端公钥: \n" . base64_decode($server_public_key) ;
 } else {
@@ -112,14 +114,16 @@ if ($server_key_hash === hash('sha256', base64_decode($server_public_key))) {
 // 处理用户请求的函数
 function handleUserRequest($socket) {
     $action = $_POST['action'];
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-
     if ($action === 'register') {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
         registerUser($socket, $username, $password);
     } elseif ($action === 'login') {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
         loginUser($socket, $username, $password);
-    } else {
+    }
+    else {
         echo "无效的请求";
     }
 }
@@ -180,7 +184,7 @@ function loginUser($socket, $username, $password) {
             $_SESSION['client_public_key'] = $client_public_key;
             $_SESSION['client_private_key'] = $client_private_key;
             $_SESSION['server_public_key'] = $server_public_key;
-            header('Location: upload.html');
+            header('Location: file_upload_download.html');
             exit();
         } else {
             echo "登录失败";
@@ -194,11 +198,11 @@ function loginUser($socket, $username, $password) {
     }
 }
 
+
 // 调用处理用户请求的函数
 handleUserRequest($socket);
 
-// 关闭套接字连接
-fclose($socket);
+
 
 // 关闭套接字连接
 fclose($socket);
