@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册与登录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .container h2 {
+            text-align: center;
+        }
+        .tab {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab button {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            background-color: #ddd;
+            transition: background-color 0.3s;
+        }
+        .tab button.active {
+            background-color: #333;
+            color: #fff;
+        }
+        .form {
+            display: none;
+        }
+        .form.active {
+            display: block;
+        }
+        .form input[type="text"],
+        .form input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>用户注册与登录</h2>
+    <div class="tab">
+        <button id="loginTab" class="active" onclick="showForm('loginForm')">登录</button>
+        <button id="registerTab" onclick="showForm('registerForm')">注册</button>
+    </div>
+
+    <div id="loginForm" class="form active">
+        <form action="index.php" method="POST">
+            <input type="hidden" name="action" value="login">
+            <input type="text" name="username" placeholder="用户名" required>
+            <input type="password" name="password" placeholder="密码" required>
+            <button type="submit">登录</button>
+        </form>
+    </div>
+
+    <div id="registerForm" class="form">
+        <form action="index.php" method="POST">
+            <input type="hidden" name="action" value="register">
+            <input type="text" name="username" placeholder="用户名" required>
+            <input type="password" name="password" placeholder="密码" required>
+            <button type="submit">注册</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showForm(formId) {
+        document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+        document.getElementById(formId).classList.add('active');
+
+        document.querySelectorAll('.tab button').forEach(button => button.classList.remove('active'));
+        document.getElementById(formId === 'loginForm' ? 'loginTab' : 'registerTab').classList.add('active');
+    }
+</script>
+
+</body>
+</html>
