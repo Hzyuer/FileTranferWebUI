@@ -4,6 +4,13 @@ session_start();
 $host = '127.0.0.1'; // 替换为 Python 服务器地址
 $port = 12345;       // 替换为 Python 服务器端口
 
+$username = $_SESSION['username'];
+$password = $_SESSION['password'] ;
+$client_public_key = $_SESSION['client_public_key'];
+$client_private_key = $_SESSION['client_private_key'];
+$server_public_key = $_SESSION['server_public_key'];
+
+
 // 创建 SSL 上下文选项以禁用证书验证（仅用于开发环境）
 $contextOptions = [
     'ssl' => [
@@ -35,7 +42,7 @@ function uploadFile($socket, $filePath) {
     ];
 
     $headerJson = json_encode($header);
-    $headerPacked = str_pad($headerJson, 128, "\0");
+    $headerPacked = str_pad($headerJson, 132, "\0");
 
     echo "\n".$headerPacked;
 

@@ -185,7 +185,7 @@ function loginUser($socket, $username, $password) {
             $_SESSION['client_private_key'] = $client_private_key;
             $_SESSION['server_public_key'] = $server_public_key;
             header('Location: file_upload_download.html');
-            exit();
+            fclose($socket);
         } else {
             echo "登录失败";
         }
