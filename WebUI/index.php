@@ -67,7 +67,7 @@ function exchange_pubkey($socket) {
         echo "无法读取公钥文件\n";
         return false;
     }
-    echo "发送客户端公钥\n" . $client_public_key;
+//    echo "发送客户端公钥\n" . $client_public_key;
 
     // 计算公钥的哈希值
     $key_hash = hash('sha256', $client_public_key);
@@ -80,10 +80,10 @@ function exchange_pubkey($socket) {
     for ($i = 0; $i < 3; $i++) {
         try {
             fwrite($socket, $data_to_send);
-            echo "客户端公钥发送成功\n";
+//            echo "客户端公钥发送成功\n";
             return true;
         } catch (Exception $e) {
-            echo "公钥发送失败，尝试重新发送\n";
+//            echo "公钥发送失败，尝试重新发送\n";
         }
     }
 
@@ -105,10 +105,10 @@ $json_data=json_decode( $json_str , true);
 $server_public_key = $json_data['public_key'];
 $server_key_hash = $json_data['key_hash'];
 
-echo base64_decode($server_public_key);
+//echo base64_decode($server_public_key);
 
 if ($server_key_hash === hash('sha256', base64_decode($server_public_key))) {
-    echo "成功接收服务端公钥: \n" . base64_decode($server_public_key) ;
+//    echo "成功接收服务端公钥: \n" . base64_decode($server_public_key) ;
 } else {
     die("未能正确接收服务端公钥。");
 }
@@ -117,7 +117,7 @@ if ($server_key_hash === hash('sha256', base64_decode($server_public_key))) {
 function handleUserRequest($socket) {
     $action = $_POST['action'];
 
-    echo $action."\n";
+//    echo $action."\n";
 
     if ($action === 'register') {
         $username = $_POST['username'];
@@ -136,7 +136,7 @@ function handleUserRequest($socket) {
 
         $fileName = $_POST['fileName'];
 
-        echo "\n".$fileName."\n";
+//        echo "\n".$fileName."\n";
 
         download_file($socket, $fileName);
     }
@@ -158,15 +158,15 @@ function registerUser($socket, $username, $password) {
 
     fwrite($socket, $paddedHeader);
 
-    echo "注册中...\n";
+//    echo "注册中...\n";
     $buf = fread($socket, 128);
 
-    echo $buf."\n";
+//    echo $buf."\n";
 
     if ($buf) {
         $headerJson = trim($buf);
         $header = json_decode($headerJson, true);
-        echo $headerJson;
+//        echo $headerJson;
 
         if ($header && isset($header['status']) && $header['status'] === 'OK') {
             // 实际应用中，这里应该将新用户保存到数据库
@@ -194,7 +194,7 @@ function loginUser($socket, $username, $password) {
 
     fwrite($socket, $paddedHeader);
 
-    echo "登录中...\n";
+//    echo "登录中...\n";
     $buf = fread($socket, 128);
     if ($buf) {
         $headerJson = trim($buf);
@@ -263,17 +263,17 @@ function uploadFile($socket,$filePath,$fileName) {
             }
 
             if (strlen($data) === 0) {
-                echo basename($filePath) . " 文件发送完毕...\n";
+//                echo basename($filePath) . " 文件发送完毕...\n";
                 break;
             }
 
-            echo "发送的内容: " . bin2hex($data) . "\n";  // 用 bin2hex 打印二进制数据以便调试
+//            echo "发送的内容: " . bin2hex($data) . "\n";  // 用 bin2hex 打印二进制数据以便调试
 
-            echo "原始数据的长度为： ".strlen($data);
+//            echo "原始数据的长度为： ".strlen($data);
 
             // 对文件数据进行加密
             $tosend = encrypt_file($data);  // 假设 encrypt_file() 是一个已实现的加密函数
-            echo "加密后的消息: " . $tosend . "\n";  // 打印加密后的消息
+//            echo "加密后的消息: " . $tosend . "\n";  // 打印加密后的消息
             $tosend = base64_encode($tosend);
 
             //$tosend = $data;
@@ -291,16 +291,16 @@ function uploadFile($socket,$filePath,$fileName) {
         fclose($file);
 
         // 提示信息
-        echo "上传成功\n";
+        echo json_encode(['success' => true, 'message' => '文件上传成功！']);
 
     } catch (Exception $e) {
-        echo "上传文件时发生错误: " . $e->getMessage() . "\n";
+        echo json_encode(['success' => false, 'message' => '文件上传失败！']);
     }
 }
 
 function download_file($socket, $fileName) {
 
-    echo "\n".$fileName."\n";
+//    echo "\n".$fileName."\n";
 
     try {
         // 准备下载请求头信息
@@ -318,7 +318,7 @@ function download_file($socket, $fileName) {
         }
         $headerPacked = str_pad($headerJson, 128, "\0");
 
-        echo "\n".$headerPacked."\n";
+//        echo "\n".$headerPacked."\n";
 
         // 发送下载请求头信息
         fwrite($socket, $headerPacked);
@@ -356,17 +356,18 @@ function download_file($socket, $fileName) {
         // 准备接收文件数据
         $file = fopen($filePath, 'wb');
         if ($file === false) {
+
             throw new Exception("无法创建文件: $filePath");
         }
 
-        echo "开始接收文件: $fileName, 文件大小: $fileSize 字节\n";
+//        echo "开始接收文件: $fileName, 文件大小: $fileSize 字节\n";
         $receivedSize = 0;
 
         while ($receivedSize < $fileSize) {
             // 先接收加密数据的长度（4 字节大端格式）
             $lengthBuf = fread($socket, 1024);
 
-            echo "\n".$lengthBuf."\n";
+//            echo "\n".$lengthBuf."\n";
 
             $recvLen = (Int)$lengthBuf; //unpack('N', $lengthBuf)[1];
 
@@ -382,7 +383,7 @@ function download_file($socket, $fileName) {
 //            $decryptedData = decrypt_file($encryptedData);
             $decryptedData = $encryptedData;
 
-            echo $decryptedData."\n";
+//            echo $decryptedData."\n";
 
             if ($decryptedData === null) {
                 throw new Exception("解密数据时发生错误");
@@ -392,14 +393,15 @@ function download_file($socket, $fileName) {
             fwrite($file, $decryptedData);
             $receivedSize += strlen($decryptedData);
 
-            echo $receivedSize."\n";
+//            echo $receivedSize."\n";
         }
 
         fclose($file);
-        echo "文件下载成功: $fileName\n";
+        echo json_encode(['success' => true, 'message' => '文件下载成功！']);
 
     } catch (Exception $e) {
-        echo "下载文件时发生错误: " . $e->getMessage() . "\n";
+        echo json_encode(['success' => false, 'message' => "下载文件时发生错误: " . $e->getMessage()]);
+//        echo "下载文件时发生错误: " . $e->getMessage() . "\n";
     }
 }
 //加密函数
@@ -415,8 +417,8 @@ function encrypt_file($data) {
     $aesKey = generate_aes_key();  // 生成 256 位 AES 密钥
     $aesIv = generate_aes_iv();    // 生成 128 位初始向量
 
-    echo "AES秘钥： ".base64_encode($aesKey)."\n";
-    echo "AES向量： ".base64_encode($aesIv)."\n";
+//    echo "AES秘钥： ".base64_encode($aesKey)."\n";
+//    echo "AES向量： ".base64_encode($aesIv)."\n";
 
     // 使用 AES-256-CBC 加密数据
     $cipher = "aes-256-cbc";

@@ -393,49 +393,6 @@ class Server:
         res_pack = struct.pack('128s', res_hex)
         conn.send(res_pack)
 
-    def handle_list(self, conn):
-        '''
-        Usage: 处理列出文件
-
-        Args:
-            conn: SSL Socket连接
-            header: 文件头信息
-        '''
-        try:
-            files = os.listdir(UPLOAD_DIR)
-            file_info = []
-
-            for file_name in files:
-                file_path = os.path.join(UPLOAD_DIR, file_name)
-                
-                # 获取文件的修改时间
-                modification_time = os.path.getmtime(file_path)
-                modification_datetime = datetime.datetime.fromtimestamp(modification_time)
-                modification_str = modification_datetime.strftime('%Y-%m-%dT%H:%M:%S')
-                
-                # 获取文件的大小（以字节为单位）
-                file_size = os.path.getsize(file_path)
-                
-                file_info.append({
-                    'name': file_name,
-                    'modification_time': modification_str,
-                    'size': file_size
-                })
-
-            response = {'status': 'OK', 'files': file_info}
-            self.logger.info("Listed files: %s", files)
-        except Exception as e:
-            response = {'status': 'ERROR', 'message': str(e)}
-            self.logger.error("Failed to list files: %s", e)
-
-        res_hex = bytes(json.dumps(response).encode('utf-8'))
-        # res_pack = struct.pack('128s', res_hex)
-        # conn.send(res_pack)
-        res_len = len(res_hex)
-        res_len_pack = struct.pack('!I', res_len)
-        conn.send(res_len_pack)
-        conn.send(res_hex)
-
     def encrypt_file(self, data) -> bytes:
         '''
         加密二进制数据

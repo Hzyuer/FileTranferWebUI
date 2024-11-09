@@ -59,6 +59,27 @@
             background-color: #555;
         }
     </style>
+    <script>
+        async function handleFormSubmit(event, form) {
+            event.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('index.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('网络错误，请稍后重试！');
+                }
+
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -66,7 +87,7 @@
     <h2>文件上传与下载</h2>
 
     <div class="form">
-        <form action="index.php" method="POST" enctype="multipart/form-data">
+        <form onsubmit="handleFormSubmit(event, this)" enctype="multipart/form-data">
             <input type="hidden" name="action" value="upload">
             <input type="file" name="file" required>
             <button type="submit">上传文件</button>
@@ -74,7 +95,7 @@
     </div>
 
     <div class="form">
-        <form action="index.php" method="POST">
+        <form onsubmit="handleFormSubmit(event, this)">
             <input type="hidden" name="action" value="download">
             <input type="text" name="fileName" placeholder="输入文件名下载" required>
             <button type="submit">下载文件</button>
