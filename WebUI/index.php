@@ -248,7 +248,7 @@ function uploadFile($socket,$filePath,$fileName) {
         // 逐块读取文件并发送
         while (!feof($file)) {
             // 每次读取 1024 字节
-            $data = fread($file, 1024);
+            $data = fread($file, 200);
             if ($data === false) {
                 throw new Exception("读取文件时发生错误");
             }

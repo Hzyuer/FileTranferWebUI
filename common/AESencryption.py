@@ -79,7 +79,7 @@ class AESCryptor:
         if isinstance(ciphertext, str):
             self.data = base64.decodebytes(ciphertext.encode(encoding='utf-8'))
         else:
-            print("HAHAHA")
+            # print("HAHAHA")
             self.data = ciphertext
             
         return self.__decrypt()
@@ -99,16 +99,14 @@ class AESCryptor:
         使用CBC进行解密
         '''
         aes = AES.new(self.key, AES.MODE_CBC, self.iv)
-        de_data = aes.decrypt(self.data)
+        de_data = self.data
 
         print("Origin: ",len(de_data))
-
-        de_data = self.__pkcs7_unpadding(de_data)
-        
+        # de_data = self.__pkcs7_unpadding(de_data)
         print("unpadding: ", len(de_data))
-
         decrypted_text = base64.b64decode(de_data)
-        return de_data
+
+        return decrypted_text
 
 def genKey() -> bytes:
     '''

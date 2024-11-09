@@ -245,30 +245,30 @@ class Server:
         fp = open(file_path, "wb")
         print("开始接收文件")  
         while not recvd_size == file_size:
-            if file_size - recvd_size > 1024:
+            if file_size - recvd_size > 200:
                 # 由于经过加密，实际发送的文件长度和原本不一致
 
                 recv_len = int(base64.b64decode(conn.recv(1024)))
                 # recv_len = int(conn.recv(1024).decode("utf-8"))
-                print("该段发送长度: ", recv_len)
+                # print("该段发送长度: ", recv_len)
                 rdata = base64.b64decode(conn.recv(recv_len))
 
                 decrypted_data = self.decrypt_file(rdata)
                 # decrypted_data = rdata
-                print("解密后: "+decrypted_data.decode('utf-8'))
+                # print("解密后: "+str(decrypted_data))
 
                 recvd_size += len(decrypted_data)
             else:
                 
                 recv_len = int(base64.b64decode(conn.recv(1024)))
-                print("该段发送长度: ", recv_len)
+                # print("该段发送长度: ", recv_len)
                 rdata = base64.b64decode(conn.recv(recv_len))
                 
-                print(rdata)
+                # print(rdata)
                 
                 decrypted_data = self.decrypt_file(rdata)
                 # decrypted_data = rdata
-                print("解密后: "+decrypted_data.decode('utf-8'))
+                # print("解密后: "+str(decrypted_data))
 
                 recvd_size = file_size
             fp.write(decrypted_data)
@@ -480,26 +480,26 @@ class Server:
         cipher_message = data_dict["encrypted_data"]
         cipher_keyiv = data_dict["encrypted_key_iv"]
         # cipher_message, cipher_keyiv = pickle.loads(data)
-        print(f"密文:{cipher_message}, 类型{type(cipher_message)}\n密钥:{cipher_keyiv}, 类型{type(cipher_keyiv)}")
+        # print("密钥:{cipher_keyiv}, 类型{type(cipher_keyiv)}")
 
 
         decrypted_keyiv = self.rsa_cipher.decrypt_message(cipher_keyiv, self.server_private_key)
 
 
 
-        print("接收到的密钥和初始向量:", decrypted_keyiv)
+        # print("接收到的密钥和初始向量:", decrypted_keyiv)
 
 
         keyiv = json.loads(decrypted_keyiv.decode('utf-8'))
         key, iv = keyiv["key"], keyiv["iv"]
 
-        print(key)
-        print(iv)
+        # print(key)
+        # print(iv)
 
         iv = base64.b64decode(iv)
         key = base64.b64decode(key)
 
-        print(f"解密后的密钥{key}和初始向量{iv}:")
+        # print(f"解密后的密钥{key}和初始向量{iv}:")
 
     
 
@@ -519,7 +519,7 @@ class Server:
 
         aes = AESCryptor(key, iv)
         
-        print("message长度为：",len(cipher_message))
+        # print("message长度为：",len(cipher_message))
         
         # decrypted_message = aes.decrypt_message(base64.b64decode(cipher_message))
 
@@ -530,7 +530,7 @@ class Server:
 
         content = self.rsa_cipher.decrypt_message(cipher_message, self.server_private_key)
         # content = base64.b64decode(plain_message['Message'])
-        print("解密的内容是", content)
+        # print("解密的内容是", content)
         # digest = plain_message['Digest']
         # print("解密的消息摘要", digest, type(digest))
 
