@@ -93,7 +93,7 @@ class Server:
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
         # 关闭SSL校验
-        context.verify_mode = ssl.CERT_NONE
+        context.verify_mode = ssl.CERT_OPTIONAL
 
         context.load_cert_chain(certfile="certs/server.crt", keyfile="certs/server.key")
 

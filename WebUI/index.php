@@ -9,9 +9,11 @@ $password = '123456';//$_POST['password']; // 从POST请求获取密码
 // 创建 SSL 上下文选项以禁用证书验证（仅用于开发环境）
 $contextOptions = [
     'ssl' => [
-        'verify_peer' => false, // 禁用验证对等方证书
-        'verify_peer_name' => false, // 禁用验证对等方名称
-        'allow_self_signed' => true // 允许自签名证书
+        'verify_peer' => true, // 启用验证对等方证书
+        'verify_peer_name' => true, // 启用验证对等方名称
+        'allow_self_signed' => true, // 允许自签名证书
+        'cafile' => '../certs/server.crt',
+        'peer_name' => $host,
     ]
 ];
 $context = stream_context_create($contextOptions);
