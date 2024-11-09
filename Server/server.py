@@ -255,7 +255,7 @@ class Server:
 
                 decrypted_data = self.decrypt_file(rdata)
                 # decrypted_data = rdata
-                print("解密后: "+decrypted_data)
+                print("解密后: "+decrypted_data.decode('utf-8'))
 
                 recvd_size += len(decrypted_data)
             else:
@@ -268,7 +268,7 @@ class Server:
                 
                 decrypted_data = self.decrypt_file(rdata)
                 # decrypted_data = rdata
-                print("解密后: "+decrypted_data)
+                print("解密后: "+decrypted_data.decode('utf-8'))
 
                 recvd_size = file_size
             fp.write(decrypted_data)
@@ -521,18 +521,20 @@ class Server:
         
         print("message长度为：",len(cipher_message))
         
-        decrypted_message = aes.decrypt_message(base64.b64decode(cipher_message))
+        # decrypted_message = aes.decrypt_message(base64.b64decode(cipher_message))
 
 
-        plain_message = pickle.loads(decrypted_message)
+        # plain_message = pickle.loads(decrypted_message)
 
-        print("plain_message: ",plain_message)
+        # print("plain_message: ",plain_message)
 
-
-        content = base64.b64decode(plain_message['Message'])
+        content = self.rsa_cipher.decrypt_message(cipher_message, self.server_private_key)
+        # content = base64.b64decode(plain_message['Message'])
         print("解密的内容是", content)
         # digest = plain_message['Digest']
         # print("解密的消息摘要", digest, type(digest))
+
+        return content
 
         # if self.rsa_cipher.verify_signature(content, digest, self.client_public_key):
         #     print("完整性验证通过!")

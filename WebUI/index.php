@@ -411,7 +411,7 @@ function encrypt_file($data) {
 
     // 使用 AES-256-CBC 加密数据
     $cipher = "aes-256-cbc";
-    $encryptedData = openssl_encrypt($paddedData, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
+//    $encryptedData = openssl_encrypt($paddedData, $cipher, $aesKey, OPENSSL_RAW_DATA, $aesIv);
 
     // 使用服务器公钥对 AES 密钥和 IV 进行加密
     $keyIv = json_encode(['key' => base64_encode($aesKey), 'iv' => base64_encode($aesIv)]);
@@ -428,6 +428,8 @@ function encrypt_file($data) {
     if (!$encryptionResult) {
         throw new Exception("RSA 加密失败");
     }
+
+    $encryptionResult = openssl_public_encrypt($data, $encryptedData, $publicKeyResource);
 
     // 返回加密后的数据和加密的 AES 密钥与 IV
     $res = [
