@@ -160,16 +160,22 @@ function registerUser($socket, $username, $password) {
 
     echo "注册中...\n";
     $buf = fread($socket, 128);
+
+    echo $buf."\n";
+
     if ($buf) {
         $headerJson = trim($buf);
         $header = json_decode($headerJson, true);
+        echo $headerJson;
 
         if ($header && isset($header['status']) && $header['status'] === 'OK') {
-            echo "注册成功";
+            // 实际应用中，这里应该将新用户保存到数据库
+            echo "<script>alert('注册成功！'); window.location.href='file_upload_download.html';</script>";
         } else {
-            echo "注册失败";
+            echo "<script>alert('注册失败，用户名已存在！');window.location.href='index.html';</script>";
         }
     }
+
 }
 
 // 发送登录请求的函数
@@ -195,15 +201,16 @@ function loginUser($socket, $username, $password) {
         $header = json_decode($headerJson, true);
 
         if ($header && isset($header['status']) && $header['status'] === 'OK') {
-            echo "登录成功";
+
             $_SESSION['username'] = $username;
             $_SESSION['password'] = $password;
             $_SESSION['client_public_key'] = $client_public_key;
             $_SESSION['client_private_key'] = $client_private_key;
             $_SESSION['server_public_key'] = $server_public_key;
-            header('Location: file_upload_download.html');
+            echo "<script>alert('登录成功！');window.location.href='file_upload_download.html';</script>";
+//            header('Location: file_upload_download.html');
         } else {
-            echo "登录失败";
+            echo "<script>alert('登录失败！');window.location.href='index.html';</script>";
         }
 
 //        if ($header && isset($header['status']) && $header['status'] === 'OK') {
